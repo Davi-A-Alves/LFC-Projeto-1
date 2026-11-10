@@ -1,3 +1,12 @@
+"""Motor de expressões regulares: ER -> AFN (Thompson) -> AFD (subconjuntos) -> AFD mínimo.
+
+Uso:
+    python main.py "(a|b)*abb" abb aabb ab          # converte e testa cadeias
+    python main.py "(a|b)*abb" abb --saida figuras  # também salva .dot/.png
+    python main.py                                  # modo interativo
+
+Para testar a cadeia vazia, use '' (ex.: python main.py "(ab)*" "" ab).
+"""
 import argparse
 import os
 
@@ -29,7 +38,10 @@ def processar(er, cadeias, saida=None):
     if cadeias:
         print(f"{'cadeia':<15}{'AFN':<10}{'AFD':<10}{'AFD mín.':<10}")
         for c in cadeias:
-            r = (simular_afn(afn, c), simular_afd(afd, c), simular_afd(minimo, c))
+            r_afn, _ = simular_afn(afn, c)
+            r_afd, _ = simular_afd(afd, c)
+            r_min, _ = simular_afd(minimo, c)
+            r = (r_afn, r_afd, r_min)
             texto = c if c else "ε"
             print(f"{texto:<15}" + "".join(f"{'aceita' if x else 'rejeita':<10}" for x in r))
             assert len(set(r)) == 1, "simuladores discordam!"

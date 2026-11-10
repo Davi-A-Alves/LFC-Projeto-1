@@ -1,3 +1,18 @@
+"""Parser de expressões regulares (descida recursiva).
+
+Gramática (precedência: fecho > concatenação > união):
+
+    uniao  -> concat ( '|' concat )*
+    concat -> fecho*                 (vazio = cadeia vazia, ε)
+    fecho  -> atomo ( '*' | '+' | '?' )*
+    atomo  -> '(' uniao ')' | '\\' CHAR | CHAR
+
+A AST é feita de tuplas:
+    ('eps',)  ('sym', c)  ('cat', A, B)  ('alt', A, B)
+    ('star', A)  ('plus', A)  ('opt', A)
+"""
+
+
 class ErroSintaxe(Exception):
     pass
 
@@ -60,6 +75,7 @@ class _Parser:
 
 
 def parse(texto):
+    """Converte a ER (string) em AST."""
     p = _Parser(texto)
     ast = p.uniao()
     if p.pos != len(texto):
@@ -68,6 +84,7 @@ def parse(texto):
 
 
 def ast_para_texto(ast):
+    """Representação legível da AST (útil na apresentação)."""
     t = ast[0]
     if t == 'eps':
         return 'ε'
@@ -77,5 +94,4 @@ def ast_para_texto(ast):
         return f"({ast_para_texto(ast[1])} · {ast_para_texto(ast[2])})"
     if t == 'alt':
         return f"({ast_para_texto(ast[1])} | {ast_para_texto(ast[2])})"
-    simbolos = {'star': '*', 'plus': '+', 'opt': '?'}
-    return ast_para_texto(ast[1]) + simbolos[t]
+    return f"{ast_para_texto(ast[1])}{ {'star': '*', 'plus': '+', 'opt': '?'}[t] }"

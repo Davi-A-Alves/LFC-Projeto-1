@@ -1,3 +1,7 @@
+"""Testes: casos esperados + comparação exaustiva com o módulo `re` do Python.
+
+Rodar:  python -m unittest testes -v
+"""
 import itertools
 import re
 import unittest
@@ -16,7 +20,10 @@ def construir(er):
 
 def aceita(er, cadeia):
     afn, afd, minimo = construir(er)
-    r = (simular_afn(afn, cadeia), simular_afd(afd, cadeia), simular_afd(minimo, cadeia))
+    r_afn, _ = simular_afn(afn, cadeia)
+    r_afd, _ = simular_afd(afd, cadeia)
+    r_min, _ = simular_afd(minimo, cadeia)
+    r = (r_afn, r_afd, r_min)
     assert len(set(r)) == 1, f"simuladores discordam para {er!r} / {cadeia!r}: {r}"
     return r[0]
 
@@ -45,6 +52,7 @@ class TestCasosEsperados(unittest.TestCase):
 
 
 class TestContraModuloRe(unittest.TestCase):
+    """Compara com re.fullmatch em TODAS as cadeias de {a,b,c} até tamanho 6."""
     ERS = ["a*b", "(a|b)*abb", "a(b|c)*", "(ab)*", "(a|b)*", "a+b?c*",
            "((a|b)(a|c))*", "(a*|b*)c", "(ab|a)(c|bc)?", "a?a?a?aaa", "(a|b|c)+", ""]
 
@@ -56,21 +64,24 @@ class TestContraModuloRe(unittest.TestCase):
                 for t in itertools.product("abc", repeat=n):
                     s = "".join(t)
                     esperado = padrao.fullmatch(s) is not None
-                    self.assertEqual(simular_afn(afn, s), esperado, f"AFN {er!r} {s!r}")
-                    self.assertEqual(simular_afd(afd, s), esperado, f"AFD {er!r} {s!r}")
-                    self.assertEqual(simular_afd(minimo, s), esperado, f"MIN {er!r} {s!r}")
+                    r_afn, _ = simular_afn(afn, s)
+                    r_afd, _ = simular_afd(afd, s)
+                    r_min, _ = simular_afd(minimo, s)
+                    self.assertEqual(r_afn, esperado, f"AFN {er!r} {s!r}")
+                    self.assertEqual(r_afd, esperado, f"AFD {er!r} {s!r}")
+                    self.assertEqual(r_min, esperado, f"MIN {er!r} {s!r}")
 
 
 class TestMinimizacao(unittest.TestCase):
     def test_minimo_nao_tem_mais_estados(self):
         for er in ["(a|b)*abb", "(a|a)*", "a*a*a*", "(ab|ab)*"]:
             afn, afd, minimo = construir(er)
-            self.assertLessEqual(len(minimo.estados()), len(afd.estados()) + 1)
+            self.assertLessEqual(len(minimo.estados), len(afd.estados) + 1)  # +1: possível estado morto
 
     def test_afd_minimo_classico(self):
-
+        # (a|b)*abb tem AFD mínimo com 4 estados (completo, sem estado morto)
         _, _, minimo = construir("(a|b)*abb")
-        self.assertEqual(len(minimo.estados()), 4)
+        self.assertEqual(len(minimo.estados), 4)
 
 
 class TestErros(unittest.TestCase):
